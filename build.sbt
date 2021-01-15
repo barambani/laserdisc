@@ -357,7 +357,12 @@ lazy val `fs2-bench` = project
     publishArtifact := false,
     scalacOptions ++= versionDependantScalacOptions.value,
     libraryDependencies ++= fs2BenchDeps.value,
-    run / fork := true
+    run / fork := true,
+    // TODO: remove
+//    libraryDependencies ++= Seq(
+//      "co.fs2"  %% "fs2-core"  % "3.0.0-M7"
+//    ),
+    unmanagedJars in Compile += file("fs2-netty-lib/fs2-netty_2.13-0.1-48c90a4-SNAPSHOT.jar")
   )
 
 lazy val cli = project

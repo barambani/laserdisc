@@ -54,6 +54,6 @@ private[parallel] object RespChannelAdapter {
 
     pipeIn =>
       streamDecoder
-        .decode(pipeIn.through(framing) map (_.bits))
+        .decode(pipeIn.through(framing) map (_.bytes))
   }
 }

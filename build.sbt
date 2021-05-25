@@ -111,7 +111,6 @@ val fs2Deps = Def.Initialize
       `fs2-io`,
       kittens,
       `log-effect-fs2`,
-      `scodec-stream`,
       scalacheck,
       munit,
       `munit-scalacheck`

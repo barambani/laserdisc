@@ -4,7 +4,7 @@ package parallel
 package testcases
 
 import cats.effect.kernel.Concurrent
-import laserdisc.protocol.RESP
+import laserdisc.protocol.resp
 import scodec.bits.BitVector
 
 private[fs2] object TestCasesLaserdiscRespBitVector {

@@ -5,7 +5,7 @@ package testcases
 
 import _root_.fs2.Chunk
 import cats.effect.kernel.Concurrent
-import laserdisc.protocol.RESP
+import laserdisc.protocol.resp
 
 private[fs2] object TestCasesLaserdiscResp {
   final def apply[F[_]: Concurrent](ch: Pipe[F, RESP, RESP]): TestCasesLaserdiscResp[F] =

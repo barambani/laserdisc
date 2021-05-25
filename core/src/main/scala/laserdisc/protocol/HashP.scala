@@ -1,6 +1,8 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.{GenBulk, RESPParamWrite}
+
 trait HashBaseP {
   import shapeless._
   import shapeless.labelled.FieldType

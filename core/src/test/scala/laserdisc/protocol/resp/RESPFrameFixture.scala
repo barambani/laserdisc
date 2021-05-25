@@ -1,10 +1,10 @@
 package laserdisc
+package protocol
+package resp
 
 import eu.timepit.refined.types.string.NonEmptyString
-import laserdisc.protocol._
 import org.scalacheck.Gen.chooseNum
 import org.scalacheck.{Arbitrary, Gen}
-import scodec.bits.BitVector
 
 import scala.Long.{MaxValue, MinValue}
 
@@ -118,10 +118,7 @@ private[laserdisc] trait RESPFrameFixture extends HighPriorityGenerators {
   final def bytesOf(l: List[ProtocolEncoded]): Array[Byte] =
     l.map(_.encoded).mkString.getBytes
 
-  final def groupInChunks(bytes: Array[Byte], chunkSize: Int): Iterator[BitVector] =
-    bytes.grouped(chunkSize).map(c => BitVector.apply(c))
-
-  final def appendChunks(buff: Iterator[BitVector]): Vector[CompleteFrame] = {
+  final def appendChunks(buff: Iterator[Array[Byte]]): Vector[CompleteFrame] = {
     val aggregate = buff.foldLeft[(RESPFrame, Vector[CompleteFrame])](
       EmptyFrame -> Vector.empty[CompleteFrame]
     ) { (acc, n) =>
@@ -130,7 +127,7 @@ private[laserdisc] trait RESPFrameFixture extends HighPriorityGenerators {
         case Right(CompleteFrame(c)) =>
           EmptyFrame -> (completed :+ CompleteFrame(c))
         case Right(MoreThanOneFrame(c, reminder)) =>
-          if (reminder.size > 0)
+          if (reminder.length > 0)
             IncompleteFrame(reminder, 0) -> (completed ++ c)
           else
             EmptyFrame -> (completed ++ c)

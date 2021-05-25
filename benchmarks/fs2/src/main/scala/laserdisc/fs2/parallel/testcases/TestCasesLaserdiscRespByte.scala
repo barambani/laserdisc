@@ -4,7 +4,7 @@ package parallel
 package testcases
 
 import cats.effect.kernel.Concurrent
-import laserdisc.protocol.RESP
+import laserdisc.protocol.resp
 
 private[fs2] object TestCasesLaserdiscRespByte {
   final def apply[F[_]: Concurrent](ch: Pipe[F, RESP, Byte]): TestCasesLaserdiscRespByte[F] =

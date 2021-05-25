@@ -1,6 +1,8 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.{GenArr, GenBulk}
+
 trait BListBaseP {
   import shapeless._
 

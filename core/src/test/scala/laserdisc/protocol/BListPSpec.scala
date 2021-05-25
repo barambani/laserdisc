@@ -9,12 +9,12 @@ abstract class BListPSpec extends BaseSpec with BListP {
     assertNoDiff(
       compileErrors("""blpop[Bar](OneOrMoreKeys.unsafeFrom(List(Key("a"))), NonNegInt(0))"""),
       """|error:
-         |Implicit not found Read[laserdisc.protocol.Bulk, laserdisc.Bar].
+         |Implicit not found Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar].
          |
          |Try writing your own, for example:
          |
-         |implicit final val myRead: Read[laserdisc.protocol.Bulk, laserdisc.Bar] = new Read[laserdisc.protocol.Bulk, laserdisc.Bar] {
-         |  override final def read(a: laserdisc.protocol.Bulk): Option[laserdisc.Bar] = ???
+         |implicit final val myRead: Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar] = new Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar] {
+         |  override final def read(a: laserdisc.protocol.resp.Bulk): Option[laserdisc.Bar] = ???
          |}
          |
          |Note 1: you can use the factory method Read.instance instead of creating it manually as shown above
@@ -30,12 +30,12 @@ abstract class BListPSpec extends BaseSpec with BListP {
     assertNoDiff(
       compileErrors("""brpop[Bar](OneOrMoreKeys.unsafeFrom(List(Key("a"))), NonNegInt(0))"""),
       """|error:
-         |Implicit not found Read[laserdisc.protocol.Bulk, laserdisc.Bar].
+         |Implicit not found Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar].
          |
          |Try writing your own, for example:
          |
-         |implicit final val myRead: Read[laserdisc.protocol.Bulk, laserdisc.Bar] = new Read[laserdisc.protocol.Bulk, laserdisc.Bar] {
-         |  override final def read(a: laserdisc.protocol.Bulk): Option[laserdisc.Bar] = ???
+         |implicit final val myRead: Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar] = new Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar] {
+         |  override final def read(a: laserdisc.protocol.resp.Bulk): Option[laserdisc.Bar] = ???
          |}
          |
          |Note 1: you can use the factory method Read.instance instead of creating it manually as shown above

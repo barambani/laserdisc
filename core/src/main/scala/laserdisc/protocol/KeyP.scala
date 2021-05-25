@@ -1,6 +1,8 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.{GenBulk, RESPRead}
+
 object KeyP {
   sealed trait Encoding
   final object Encoding {
@@ -12,7 +14,7 @@ object KeyP {
     final case object hashtable  extends Encoding
     final case object skiplist   extends Encoding
 
-    implicit final val bulk2EncodingRead: Bulk ==> Encoding = Read.instance {
+    implicit val bulk2EncodingRead: Bulk ==> Encoding = Read.instance {
       case Bulk("raw")        => Right(raw)
       case Bulk("int")        => Right(int)
       case Bulk("ziplist")    => Right(ziplist)
@@ -26,26 +28,26 @@ object KeyP {
 
   sealed trait MigrateMode { def params: List[String] }
   final object MigrateMode {
-    final object copy    extends MigrateMode { override final val params: List[String] = List("COPY")            }
-    final object replace extends MigrateMode { override final val params: List[String] = List("REPLACE")         }
-    final object both    extends MigrateMode { override final val params: List[String] = List("COPY", "REPLACE") }
+    final object copy    extends MigrateMode { override val params: List[String] = List("COPY")            }
+    final object replace extends MigrateMode { override val params: List[String] = List("REPLACE")         }
+    final object both    extends MigrateMode { override val params: List[String] = List("COPY", "REPLACE") }
   }
 
   sealed trait RestoreEviction { def param: String; def seconds: NonNegInt }
   final object RestoreEviction {
-    final case class IdleTime(override final val seconds: NonNegInt) extends RestoreEviction {
-      override final val param: String = "IDLETIME"
+    final case class IdleTime(override val seconds: NonNegInt) extends RestoreEviction {
+      override val param: String = "IDLETIME"
     }
-    final case class Frequency(override final val seconds: NonNegInt) extends RestoreEviction {
-      override final val param: String = "FREQUENCY"
+    final case class Frequency(override val seconds: NonNegInt) extends RestoreEviction {
+      override val param: String = "FREQUENCY"
     }
   }
 
   sealed trait RestoreMode { def params: List[String] }
   final object RestoreMode {
-    final case object replace     extends RestoreMode { override final val params: List[String] = List("REPLACE")           }
-    final case object absolutettl extends RestoreMode { override final val params: List[String] = List("ABSTTL")            }
-    final case object both        extends RestoreMode { override final val params: List[String] = List("REPLACE", "ABSTTL") }
+    final case object replace     extends RestoreMode { override val params: List[String] = List("REPLACE")           }
+    final case object absolutettl extends RestoreMode { override val params: List[String] = List("ABSTTL")            }
+    final case object both        extends RestoreMode { override val params: List[String] = List("REPLACE", "ABSTTL") }
   }
 
   sealed trait Type
@@ -76,12 +78,12 @@ trait KeyBaseP {
   import shapeless._
 
   final object keytypes {
-    final type KeyEncoding        = KeyP.Encoding
-    final type KeyMigrateMode     = KeyP.MigrateMode
-    final type KeyRestoreEviction = KeyP.RestoreEviction
-    final type KeyRestoreMode     = KeyP.RestoreMode
-    final type KeyType            = KeyP.Type
-    final type KeyTTLResponse     = KeyP.TTLResponse
+    type KeyEncoding        = KeyP.Encoding
+    type KeyMigrateMode     = KeyP.MigrateMode
+    type KeyRestoreEviction = KeyP.RestoreEviction
+    type KeyRestoreMode     = KeyP.RestoreMode
+    type KeyType            = KeyP.Type
+    type KeyTTLResponse     = KeyP.TTLResponse
 
     final val KeyEncoding               = KeyP.Encoding
     final val KeyMigrateMode            = KeyP.MigrateMode

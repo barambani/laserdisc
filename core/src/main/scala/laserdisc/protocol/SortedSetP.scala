@@ -1,6 +1,8 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.{GenBulk, RESPRead}
+
 object SortedSetP {
   sealed trait Aggregate
   final object Aggregate {

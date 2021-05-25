@@ -35,6 +35,6 @@ private[parallel] object BitVectorChannelAdapter {
       bytesIn => loopScan(bytesIn, EmptyFrame).stream
     }
 
-    _.through(framing).map(_.bits)
+    _.through(framing).map(_.bytes)
   }
 }

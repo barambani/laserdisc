@@ -1,12 +1,14 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.GenBulk
+
 object ServerP {
   import scala.language.dynamics
 
   sealed trait InfoSection
   final object InfoSection {
-    final type default = default.type
+    type default = default.type
 
     final object server       extends InfoSection
     final object clients      extends InfoSection

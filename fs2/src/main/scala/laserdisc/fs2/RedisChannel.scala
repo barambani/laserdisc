@@ -7,15 +7,10 @@ import cats.MonadError
 import cats.effect.{Concurrent, Resource}
 import cats.syntax.flatMap._
 import com.comcast.ip4s.{Host, SocketAddress}
-import laserdisc.protocol._
+import laserdisc.protocol.resp._
 import log.effect.fs2.LogSelector
-import scodec.Codec
-import scodec.bits.BitVector
-import scodec.stream.{StreamDecoder, StreamEncoder}
 
 object RedisChannel {
-  private[this] final val streamDecoder = StreamDecoder.many(Codec[RESP])
-  private[this] final val streamEncoder = StreamEncoder.many(Codec[RESP])
 
   private[fs2] final def apply[F[_]: Network: LogSelector: Concurrent](
       address: SocketAddress[Host],
@@ -49,16 +44,15 @@ object RedisChannel {
         implicit logSelector: LogSelector[F]
     ): Pipe[F, RESP, Unit] =
       _.evalTap(resp => logSelector.log.trace(s"sending $resp"))
-        .through(streamEncoder.encode[F])
-        .chunks
-        .evalMap(chunks => socketWrite(Chunk.array(chunks.foldLeft(BitVector.empty)(_ ++ _).toByteArray)))
+        .map(RESP.respCodec.encode)
+        .evalMap(arr => socketWrite(Chunk.array(arr)))
 
-    def receiveResp[F[_]: MonadError[*[_], Throwable]](implicit logSelector: LogSelector[F]): Pipe[F, Byte, RESP] = {
+    def receiveResp[F[_]](implicit logSelector: LogSelector[F], monadError: MonadError[F, Throwable]): Pipe[F, Byte, RESP] = {
       def framing: Pipe[F, Byte, CompleteFrame] = {
         def loopScan(bytesIn: Stream[F, Byte], previous: RESPFrame): Pull[F, CompleteFrame, Unit] =
           bytesIn.pull.uncons.flatMap {
             case Some((chunk, rest)) =>
-              previous.append(chunk.toBitVector) match {
+              previous.append(chunk.toArray) match {
                 case Left(ex)                    => Pull.raiseError(ex)
                 case Right(frame: CompleteFrame) => Pull.output1(frame) >> loopScan(rest, EmptyFrame)
                 case Right(frame: MoreThanOneFrame) =>
@@ -76,8 +70,16 @@ object RedisChannel {
       }
 
       pipeIn =>
-        streamDecoder
-          .decode(pipeIn.through(framing) map (_.bits))
+        pipeIn
+          .through(framing)
+          .evalMap(frame =>
+            RESP.respCodec
+              .decode(frame.bytes)
+              .fold[F[RESP]](
+                err => monadError.raiseError(new Exception(err.m)),
+                res => monadError.pure(res.step)
+              )
+          )
           .evalTap(resp => logSelector.log.trace(s"receiving $resp"))
     }
   }

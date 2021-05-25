@@ -5,7 +5,7 @@ package testcases
 
 import laserdisc.all.{lrange, ltrim, mset, rpush, set}
 import laserdisc.auto._
-import laserdisc.protocol.RESP
+import laserdisc.protocol.resp
 import scodec.Codec
 
 private[fs2] trait TestCommandsProtocol extends TestValues {

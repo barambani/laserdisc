@@ -1,6 +1,7 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.{GenArr, GenBulk}
 import org.scalacheck.Prop.forAll
 
 abstract class GeoPSpec extends BaseSpec with GeoP {

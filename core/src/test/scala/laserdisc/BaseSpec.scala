@@ -57,7 +57,7 @@ abstract class BaseSpec
   private[this] final val rfc1123Gen: Gen[String] = {
     def dashAtBeginOrEnd(s: String) = s.startsWith(dashString) || s.endsWith(dashString)
     val piece                       = chooseNum(1, 62).flatMap(strOfNGen(_, 1 -> dashGen, 99 -> alphaNumChar))
-    choose(1, 5).flatMap(listOfN(_, piece.retryUntil(!dashAtBeginOrEnd(_))).map(_.mkString(dotString)).retryUntil(_.size <= 255))
+    choose(1, 5).flatMap(listOfN(_, piece.retryUntil(!dashAtBeginOrEnd(_))).map(_.mkString(dotString)).retryUntil(_.length <= 255))
   }
   private[this] final val rfc1918Gen: Gen[String] = Gen.oneOf(ipv4Gen(10), chooseNum(16, 31).flatMap(ipv4Gen(172, _)), ipv4Gen(192, 168))
   private[this] final val rfc5737Gen: Gen[String] = Gen.oneOf(ipv4Gen(192, 0, 2), ipv4Gen(198, 51, 100), ipv4Gen(203, 0, 113))
@@ -163,21 +163,21 @@ abstract class BaseSpec
   final val boolToNum: Boolean => Num = b => Num(if (b) 1 else 0)
 
   private[laserdisc] def assertEquals[A, B](eab: Either[A, B], b: B): Unit =
-    eab.fold(err => fail(s"It Should be right but was left with $err"), r => assertEquals(r, b))
+    eab.fold(err => fail(s"""It Should be right but was left with error: $err"""), r => assertEquals(r, b))
 
   private[laserdisc] def assertLeftEquals[A, B](eab: Either[A, B], a: A): Unit =
-    eab.fold(l => assertEquals(l, a), res => fail(s"It Should be left but was right with $res"))
+    eab.fold(l => assertEquals(l, a), res => fail(s"""It Should be left but was right with result: $res"""))
 
   private[laserdisc] def fails[A, B](eab: Either[A, B], a: A): Unit =
-    eab.fold(e => assertEquals(e, a), res => fail(s"It Should be left but was right with $res"))
+    eab.fold(e => assertEquals(e, a), res => fail(s"""It Should be left but was right with result: $res"""))
 
   final val succeed = assert(cond = true)
 
   protected[this] implicit final class EitherSyntax[A, B](private val eab: Either[A, B]) {
     def onRight[C](f: B => Boolean): Unit =
-      eab.fold(err => fail(s"It Should be right but was left with $err"), b => assert(f(b)))
+      eab.fold(err => fail(s"""It Should be right but was left with error: $err"""), b => assert(f(b)))
 
     def onRightAll[C](f: B => Unit): Unit =
-      eab.fold(err => fail(s"It Should be right but was left with $err"), f)
+      eab.fold(err => fail(s"""It Should be right but was left with error: $err"""), f)
   }
 }

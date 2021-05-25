@@ -1,6 +1,7 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.GenBulk
 import org.scalacheck.Prop.forAll
 
 abstract class ListPSpec extends BaseSpec with ListP {

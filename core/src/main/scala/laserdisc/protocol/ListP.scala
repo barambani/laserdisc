@@ -1,6 +1,8 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.{GenBulk, RESPRead}
+
 object ListP {
   sealed trait Position
   final object Position {
@@ -18,7 +20,7 @@ trait ListBaseP {
   import shapeless._
 
   final object listtypes {
-    final type ListPosition = ListP.Position
+    type ListPosition = ListP.Position
 
     final val ListPosition = ListP.Position
   }

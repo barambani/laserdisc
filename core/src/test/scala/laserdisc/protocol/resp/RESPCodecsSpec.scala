@@ -1,50 +1,37 @@
 package laserdisc
 package protocol
+package resp
 
-import java.nio.charset.StandardCharsets.UTF_8
-
+import laserdisc.protocol.resp.RESP.respCodec
+import laserdisc.protocol.resp.RESPCodec.{RESPCodecErr, lenientUtf8Codec}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
-import scodec.bits.BitVector
-import scodec.{Codec, Err => SErr}
+
+import java.nio.charset.StandardCharsets.UTF_8
 
 object RESPCodecsSpec {
   private[this] final object functions {
-    private[this] final val attemptDecode = (bits: BitVector) => Codec[RESP].decodeValue(bits)
-    private[this] final val requireEncode = (resp: RESP) => Codec[RESP].encode(resp).require
-    private[this] final val stringToBytes = (s: String) => s.getBytes(UTF_8)
-
-    final val stringToBytesLength = stringToBytes andThen (bytes => bytes.length)
-
-    final val stringToRESPAttempt = {
-      val bitVectorFromString = (s: String) => BitVector(stringToBytes(s))
-      bitVectorFromString andThen attemptDecode
-    }
-
-    val respToString: RESP => String = {
-      val stringify = (bits: BitVector) => bits.bytes.decodeUtf8.fold(_.getMessage, identity)
-      requireEncode andThen stringify
-    }
-
-    final val respSeqToString = (xs: Seq[RESP]) => xs.map(respToString).mkString
-
-    final val roundTripAttempt = requireEncode andThen attemptDecode
+    final val stringToBytesLength = (s: String) => s.getBytes(UTF_8).length
+    final val stringToResp        = (s: String) => respCodec.decode(s.getBytes(UTF_8))
+    final val respToString        = (resp: RESP) => lenientUtf8Codec.decode(respCodec.encode(resp)).fold(_.m, _.step)
+    final val respSeqToString     = (xs: Seq[RESP]) => xs.map(respToString).mkString
+    final val roundTripAttempt    = (resp: RESP) => respCodec.decode(respCodec.encode(resp))
   }
 
   private implicit final class RichChar(private val underlying: Char) extends AnyVal {
-    def toHex: String = BitVector.fromByte(underlying.toByte).toHex
+    def toHex: String = underlying.toByte.toInt.toHexString
   }
 
   private implicit final class RichString(private val underlying: String) extends AnyVal {
-    def RESP: SErr | RESP = functions.stringToRESPAttempt(underlying).toEither
-    def bytesLength: Int  = functions.stringToBytesLength(underlying)
+    def RESP: RESPCodecErr | RESP = functions.stringToResp(underlying).map(_.step)
+    def bytesLength: Int          = functions.stringToBytesLength(underlying)
   }
 
   private implicit final class RichRESP(private val underlying: RESP) extends AnyVal {
     def wireFormat: String = functions.respToString(underlying)
-    def roundTrip: RESP    = functions.roundTripAttempt(underlying).require
+    def roundTrip: RESP    = functions.roundTripAttempt(underlying).fold(err => throw new Exception(err.m), _.step)
   }
 
   private implicit final class RichSeqRESP(private val underlying: Seq[RESP]) extends AnyVal {
@@ -52,7 +39,7 @@ object RESPCodecsSpec {
   }
 }
 
-final class RESPCodecsSpec extends BaseSpec {
+final class RESPCodecsSpec extends BaseSpec with EitherSyntax {
   import RESPCodecsSpec._
 
   private[this] val smallNumGen: Gen[Int] = chooseNum(0, 20)
@@ -93,8 +80,8 @@ final class RESPCodecsSpec extends BaseSpec {
   property("A RESP codec handling unknown protocol type fails with correct error message") {
     forAll { c: Char =>
       assertLeftEquals(
-        s"$c".RESP leftMap (_.messageWithContext),
-        s"unidentified RESP type (Hex: ${c.toHex})"
+        s"$c".RESP.leftMap(_.m),
+        s"unidentified RESP type decoding RESP. Was:$c (Hex:${c.toHex}), Input: $c"
       )
     }
   }
@@ -103,7 +90,7 @@ final class RESPCodecsSpec extends BaseSpec {
     forAll { s: String => assertEquals(s"+$s$CRLF".RESP, Str(s)) }
   }
 
-  property("A RESP codec handling simple strings decodes them correctly") {
+  property("A RESP codec handling simple strings wire format decodes them correctly") {
     forAll { s: Str => assertEquals(s.wireFormat, s"+${s.value}$CRLF") }
   }
 
@@ -137,11 +124,11 @@ final class RESPCodecsSpec extends BaseSpec {
 
   property("A RESP codec handling bulk strings fails with correct error message when decoding size < -1") {
     assertLeftEquals(
-      s"$$-2${CRLF}bla$CRLF".RESP leftMap (_.messageWithContext),
-      "size: failed to decode bulk-string of size -2"
+      s"$$-2${CRLF}bla$CRLF".RESP.leftMap(_.m),
+      "failed to decode bulk-string of size -2"
     )
   }
-
+  override val scalaCheckInitialSeed = "PTH3mWWxncNpyVMVMmwHe7k69xqSQaQQ8UFal4X-AiB="
   property("A RESP codec handling bulk strings decodes them correctly") {
     forAll { os: Option[String] =>
       os match {
@@ -166,12 +153,12 @@ final class RESPCodecsSpec extends BaseSpec {
 
   property("A RESP codec handling arrays fails with correct error message when decoding size < -1") {
     assertLeftEquals(
-      s"*-2${CRLF}bla$CRLF".RESP leftMap (_.messageWithContext),
-      "size: failed to decode array of size -2"
+      s"*-2${CRLF}bla$CRLF".RESP.leftMap(_.m),
+      "failed to decode array of size -2"
     )
   }
 
-  property("A RESP codec handling bulk strings decodes them correctly") {
+  property("A RESP codec handling Arr strings decodes them correctly") {
     forAll { ors: Option[List[RESP]] =>
       ors match {
         case None     => assertEquals(s"*-1$CRLF".RESP, NilArr)
@@ -189,7 +176,7 @@ final class RESPCodecsSpec extends BaseSpec {
     }
   }
 
-  property("A RESP codec handling bulk strings roundtrips with no errors") {
+  property("A RESP codec handling Arr strings roundtrips with no errors") {
     forAll { a: GenArr => assertEquals(a.roundTrip, a) }
   }
 }

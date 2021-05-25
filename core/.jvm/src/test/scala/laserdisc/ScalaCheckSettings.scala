@@ -8,7 +8,7 @@ private[laserdisc] trait ScalaCheckSettings extends ScalaCheckSuite {
       .withMinSuccessfulTests(200)
       .withMaxDiscardRatio(20)
       .disableLegacyShrinking
-      .withWorkers(16)
+      .withWorkers(1)
       .withMinSize(0)
       .withMaxSize(150)
 }

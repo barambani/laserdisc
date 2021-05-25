@@ -1,6 +1,8 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.{GenBulk, RESPParamWrite, RESPRead}
+
 object StringP {
   sealed trait Bit
   final object Bit {

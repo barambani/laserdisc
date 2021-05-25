@@ -1,5 +1,3 @@
-import java.{lang => j}
-
 import eu.timepit.refined.W
 import eu.timepit.refined.api._
 import eu.timepit.refined.boolean.{And, Not, Or, True}
@@ -11,36 +9,39 @@ import eu.timepit.refined.string.{IPv4, MatchesRegex}
 import eu.timepit.refined.types.net.PrivateNetworks._
 import shapeless._
 
+import java.{lang => j}
+
 package object laserdisc {
   // Basic type aliases
   final type |[+A, +B] = Either[A, B]
   final type Maybe[A]  = Throwable | A
 
   // Type forwarders
-  final type Arr        = protocol.Arr
-  final type Bulk       = protocol.Bulk
-  final type Err        = protocol.Err
-  final type NilArr     = protocol.NilArr.type
-  final type NullBulk   = protocol.NullBulk.type
-  final type Num        = protocol.Num
-  final type Str        = protocol.Str
+  final type Arr        = protocol.resp.Arr
+  final type Bulk       = protocol.resp.Bulk
+  final type Err        = protocol.resp.Err
+  final type NilArr     = protocol.resp.NilArr.type
+  final type NullBulk   = protocol.resp.NullBulk.type
+  final type Num        = protocol.resp.Num
+  final type Str        = protocol.resp.Str
   final type Protocol   = protocol.Protocol
   final type ==>[A, B]  = protocol.Read[A, B]
-  final type RESP       = protocol.RESP
+  final type RESP       = protocol.resp.RESP
   final type Show[A]    = protocol.Show[A]
-  final type RESPDecErr = protocol.RESPDecErr
+  final type RESPDecErr = protocol.resp.RESPDecErr
 
   // Object forwarders
-  final val Arr        = protocol.Arr
-  final val Bulk       = protocol.Bulk
-  final val Err        = protocol.Err
-  final val NilArr     = protocol.NilArr
-  final val NullBulk   = protocol.NullBulk
-  final val Num        = protocol.Num
+  final val Arr        = protocol.resp.Arr
+  final val Bulk       = protocol.resp.Bulk
+  final val Err        = protocol.resp.Err
+  final val NilArr     = protocol.resp.NilArr
+  final val NullBulk   = protocol.resp.NullBulk
+  final val Num        = protocol.resp.Num
+  final val Str        = protocol.resp.Str
   final val Protocol   = protocol.Protocol
   final val Read       = protocol.Read
   final val Show       = protocol.Show
-  final val RESPDecErr = protocol.RESPDecErr
+  final val RESPDecErr = protocol.resp.RESPDecErr
 
   private[this] final type NoControlChar = Not[ControlChar]
   private[this] final type NoWhitespace  = Not[Whitespace]

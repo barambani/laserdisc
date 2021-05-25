@@ -30,7 +30,7 @@ object ClusterP {
   )
   final case class Nodes(nodes: Seq[Node]) extends AnyVal
   final object Nodes {
-    private final val A: String ==> Address = {
+    private val A: String ==> Address = {
       val HPCP = raw"([A-Za-z0-9\-\.]*):(\d+)@(\d+)".r
       val HP   = raw"([A-Za-z0-9\-\.]*):(\d+)".r
       Read.instance {
@@ -41,7 +41,7 @@ object ClusterP {
         case other                                          => Left(RESPDecErr(s"Unexpected encoding for Address. Was $other"))
       }
     }
-    private final val Fs: String ==> Seq[Flag] = Read.instance {
+    private val Fs: String ==> Seq[Flag] = Read.instance {
       case "noflags" => Right(Seq.empty)
       case s =>
         s.split(COMMA_CH).foldRight[RESPDecErr | List[Flag]](Right(Nil)) {
@@ -56,21 +56,21 @@ object ClusterP {
           case (_, left)                 => left
         }
     }
-    private final val MM: String ==> Option[NodeId] = Read.instance {
+    private val MM: String ==> Option[NodeId] = Read.instance {
       case "-"        => Right(None)
       case NodeId(id) => Right(Some(id))
       case other      => Left(RESPDecErr(s"Wrong encoding for Node Id. Was $other"))
     }
-    private final val L: String ==> LinkState = Read.instance {
+    private val L: String ==> LinkState = Read.instance {
       case "connected"    => Right(LinkState.connected)
       case "disconnected" => Right(LinkState.disconnected)
       case other          => Left(RESPDecErr(s"Wrong encoding for link state. Was $other"))
     }
-    private final val Ss: Seq[String] ==> Seq[SlotType] = {
+    private val Ss: Seq[String] ==> Seq[SlotType] = {
       val R  = raw"(\d+)-(\d+)".r
       val IS = raw"\[(\d+)-<-(${NodeIdRegexWit.value})\]".r
       val MS = raw"\[(\d+)->-(${NodeIdRegexWit.value})\]".r
-      Read.instance { case ss =>
+      Read.instance { ss =>
         ss.foldRight[RESPDecErr | List[SlotType]](Right(Nil)) {
           case (ToInt(Slot(s)), Right(fgs))                    => Right(SlotType.Single(s) :: fgs)
           case (R(ToInt(Slot(f)), ToInt(Slot(t))), Right(fgs)) => Right(SlotType.Range(f, t) :: fgs)
@@ -81,7 +81,7 @@ object ClusterP {
         }
       }
     }
-    private final val ND: String ==> Node = {
+    private val ND: String ==> Node = {
       val errorS = "String ==> Node, Error decoding a cluster Node. Error was: "
       _.split(SPACE_CH).toList match {
         case NodeId(id) :: A(Right(a)) :: Fs(Right(fs)) :: MM(Right(mm)) :: ToInt(NonNegInt(ps)) :: ToInt(NonNegInt(pr)) ::
@@ -101,7 +101,7 @@ object ClusterP {
       }
     }
 
-    implicit final val nodesRead: Bulk ==> Nodes = Read.instance { case Bulk(s) =>
+    implicit val nodesRead: Bulk ==> Nodes = Read.instance { case Bulk(s) =>
       s.split(LF_CH)
         .foldRight[RESPDecErr | (List[Node], Int)](Right(Nil -> 0)) {
           case (ND(Right(node)), Right((ns, nsl))) => Right((node :: ns) -> (nsl + 1))
@@ -118,7 +118,7 @@ object ClusterP {
     final case object force    extends FailoverMode
     final case object takeover extends FailoverMode
 
-    implicit final val failoverModeShow: Show[FailoverMode] = Show.instance {
+    implicit val failoverModeShow: Show[FailoverMode] = Show.instance {
       case `force`    => "FORCE"
       case `takeover` => "TAKEOVER"
     }
@@ -134,7 +134,7 @@ object ClusterP {
     final case object handshake    extends Flag
     final case object noaddress    extends Flag
 
-    implicit final val flagShow: Show[Flag] = Show.instance {
+    implicit val flagShow: Show[Flag] = Show.instance {
       case `myself`       => "myself"
       case `master`       => "master"
       case `replica`      => "slave"
@@ -153,7 +153,7 @@ object ClusterP {
     final case object connected    extends LinkState
     final case object disconnected extends LinkState
 
-    implicit final val linkStateShow: Show[LinkState] = Show.unsafeFromToString
+    implicit val linkStateShow: Show[LinkState] = Show.unsafeFromToString
   }
 
   final case class Address(host: Host, port: Port, clusterPort: Port)
@@ -163,7 +163,7 @@ object ClusterP {
     final case object hard extends ResetMode
     final case object soft extends ResetMode
 
-    implicit final val resetModeShow: Show[ResetMode] = Show.instance {
+    implicit val resetModeShow: Show[ResetMode] = Show.instance {
       case `hard` => "HARD"
       case `soft` => "SOFT"
     }
@@ -175,7 +175,7 @@ object ClusterP {
     final case object migrating extends SetSlotMode
     final case object node      extends SetSlotMode
 
-    implicit final val setSlotModeShow: Show[SetSlotMode] = Show.instance {
+    implicit val setSlotModeShow: Show[SetSlotMode] = Show.instance {
       case `importing` => "IMPORTING"
       case `migrating` => "MIGRATING"
       case `node`      => "NODE"
@@ -197,7 +197,7 @@ object ClusterP {
   }
 
   final case class Slots(slots: Map[SlotType.Range, SlotInfo]) extends AnyVal {
-    final def infoFor(slot: Slot): Option[SlotInfo] =
+    def infoFor(slot: Slot): Option[SlotInfo] =
       slots
         .find { case (SlotType.Range(from, to), _) =>
           slot.value >= from.value && slot.value <= to.value
@@ -249,20 +249,22 @@ object ClusterP {
       }
     }
 
-    implicit final val slotsRead: Arr ==> Slots = Read.instance { case Arr(arrays) =>
-      arrays.foldRight[RESPDecErr | (Map[SlotType.Range, SlotInfo], Int)](Right(Map.empty -> 0)) {
-        case (Arr(Num(ToInt(Slot(from))) :: Num(ToInt(Slot(to))) :: Arr(SI(Right(si))) :: Nil), Right((sts, stsl))) =>
-          Right((sts + (Range(from, to) -> si)) -> (stsl + 1))
-        case (Arr(Num(ToInt(Slot(_))) :: Num(ToInt(Slot(_))) :: Arr(Nil) :: Nil), Right((_, stsl))) =>
-          Left(RESPDecErr(s"Unexpected slot assignment encoding at element ${stsl + 1}. The assignment list was empty"))
-        case (Arr(other), Right((_, stsl))) =>
-          Left(
-            RESPDecErr(
-              s"Arr ==> Slots unexpected slot encoding at element ${stsl + 1}. Expected [from, to, [[host, port], node id, replicas]] or [from, to, [[host, port], replicas]] but was $other"
+    implicit val slotsRead: Arr ==> Slots = Read.instance { case Arr(arrays) =>
+      arrays
+        .foldRight[RESPDecErr | (Map[SlotType.Range, SlotInfo], Int)](Right(Map.empty -> 0)) {
+          case (Arr(Num(ToInt(Slot(from))) :: Num(ToInt(Slot(to))) :: Arr(SI(Right(si))) :: Nil), Right((sts, stsl))) =>
+            Right((sts + (Range(from, to) -> si)) -> (stsl + 1))
+          case (Arr(Num(ToInt(Slot(_))) :: Num(ToInt(Slot(_))) :: Arr(Nil) :: Nil), Right((_, stsl))) =>
+            Left(RESPDecErr(s"Unexpected slot assignment encoding at element ${stsl + 1}. The assignment list was empty"))
+          case (Arr(other), Right((_, stsl))) =>
+            Left(
+              RESPDecErr(
+                s"Arr ==> Slots unexpected slot encoding at element ${stsl + 1}. Expected [from, to, [[host, port], node id, replicas]] or [from, to, [[host, port], replicas]] but was $other"
+              )
             )
-          )
-        case (_, left) => left
-      } map (r => Slots(r._1))
+          case (_, left) => left
+        }
+        .map(r => Slots(r._1))
     }
   }
 }
@@ -271,24 +273,24 @@ trait ClusterP {
   import shapeless._
 
   final object clustertypes {
-    final type ClusterAddress           = ClusterP.Address
-    final type ClusterFailoverMode      = ClusterP.FailoverMode
-    final type ClusterFlag              = ClusterP.Flag
-    final type ClusterHostPort          = ClusterP.HostPort
-    final type ClusterHostPortNodeId    = ClusterP.HostPortNodeId
-    final type ClusterImportingSlotType = ClusterP.SlotType.ImportingSlot
-    final type ClusterInfo              = ClusterP.Info
-    final type ClusterLinkState         = ClusterP.LinkState
-    final type ClusterMigratingSlotType = ClusterP.SlotType.MigratingSlot
-    final type ClusterNewSlotInfo       = ClusterP.SlotInfo.NewSlotInfo
-    final type ClusterNode              = ClusterP.Node
-    final type ClusterNodes             = ClusterP.Nodes
-    final type ClusterOldSlotInfo       = ClusterP.SlotInfo.OldSlotInfo
-    final type ClusterRangeSlotType     = ClusterP.SlotType.Range
-    final type ClusterResetMode         = ClusterP.ResetMode
-    final type ClusterSetSlotMode       = ClusterP.SetSlotMode
-    final type ClusterSingleSlotType    = ClusterP.SlotType.Single
-    final type ClusterSlots             = ClusterP.Slots
+    type ClusterAddress           = ClusterP.Address
+    type ClusterFailoverMode      = ClusterP.FailoverMode
+    type ClusterFlag              = ClusterP.Flag
+    type ClusterHostPort          = ClusterP.HostPort
+    type ClusterHostPortNodeId    = ClusterP.HostPortNodeId
+    type ClusterImportingSlotType = ClusterP.SlotType.ImportingSlot
+    type ClusterInfo              = ClusterP.Info
+    type ClusterLinkState         = ClusterP.LinkState
+    type ClusterMigratingSlotType = ClusterP.SlotType.MigratingSlot
+    type ClusterNewSlotInfo       = ClusterP.SlotInfo.NewSlotInfo
+    type ClusterNode              = ClusterP.Node
+    type ClusterNodes             = ClusterP.Nodes
+    type ClusterOldSlotInfo       = ClusterP.SlotInfo.OldSlotInfo
+    type ClusterRangeSlotType     = ClusterP.SlotType.Range
+    type ClusterResetMode         = ClusterP.ResetMode
+    type ClusterSetSlotMode       = ClusterP.SetSlotMode
+    type ClusterSingleSlotType    = ClusterP.SlotType.Single
+    type ClusterSlots             = ClusterP.Slots
 
     final val ClusterAddress           = ClusterP.Address
     final val ClusterFailoverMode      = ClusterP.FailoverMode

@@ -7,32 +7,43 @@ import cats.syntax.flatMap._
 import laserdisc.auto._
 import laserdisc.fs2.parallel.runtime.BenchRuntime.fixedFixedRuntime
 import laserdisc.fs2.parallel.testcases.TestCasesLaserdisc
-import log.effect.fs2.SyncLogWriter.consoleLogUpToLevel
-import log.effect.{LogLevels, LogWriter}
 
 import scala.concurrent.duration.DurationInt
 
 object CatsIoTestRunner {
 
-  private[this] implicit val logWriter: LogWriter[IO] = consoleLogUpToLevel(LogLevels.Error)
+//  private[this] implicit val logWriter: LogWriter[IO] = consoleLogUpToLevel(LogLevels.Error)
 
   def main(args: Array[String]): Unit = {
 
     val runFor = 15.minutes
 
-    val task = IO.monotonic >>= { start =>
+    val laserdiscClientTask = IO.monotonic >>= { start =>
       RedisClient[IO].to("localhost", 6379).use { cl =>
         val cases = TestCasesLaserdisc[IO](cl)
-        0.tailRecM[IO, Int] { count =>
+        0L.tailRecM[IO, Long] { count =>
           (cases.case1 >> IO.monotonic).map { current =>
             if (current - start >= runFor) count.asRight
-            else (count + 1).asLeft
+            else (count + 1L).asLeft
           }
         }
       }
     }
 
-    println(s"Avg send/s: ${task.unsafeRunSync()(fixedFixedRuntime) * 24.0 / runFor.toMinutes / 60}")
+//    val bitVectorInTask = IO.monotonic >>= { start =>
+//      val channel = RedisAddress("localhost", 6379).toSocketAddress[IO] map { address =>
+//        BitVectorInByteOutChannel[IO](address, receiveBufferSizeBytes = 8 * 1024 * 1024)
+//      }
+//      val cases = channel.flatMap(ch => TestCasesLaserdiscBitVectorByte[IO](ch).case1)
+//      0L.tailRecM[IO, Long] { count =>
+//        (cases >> IO.monotonic).map { current =>
+//          if (current - start >= runFor) count.asRight
+//          else (count + 1L).asLeft
+//        }
+//      }
+//    }
+
+    println(s"Avg send/s: ${laserdiscClientTask.unsafeRunSync()(fixedFixedRuntime) * 48d / runFor.toMinutes / 60}")
     sys.exit()
   }
 }

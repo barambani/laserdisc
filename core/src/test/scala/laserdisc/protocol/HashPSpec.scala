@@ -1,6 +1,7 @@
 package laserdisc
 package protocol
 
+import laserdisc.protocol.resp.GenArr
 import org.scalacheck.Prop.forAll
 
 abstract class HashPSpec extends BaseSpec with HashP {
@@ -32,12 +33,12 @@ abstract class HashPSpec extends BaseSpec with HashP {
     assertNoDiff(
       compileErrors("""hget[Bar](Key("a"), Key("f"))"""),
       """|error:
-         |Implicit not found Read[laserdisc.protocol.Bulk, laserdisc.Bar].
+         |Implicit not found Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar].
          |
          |Try writing your own, for example:
          |
-         |implicit final val myRead: Read[laserdisc.protocol.Bulk, laserdisc.Bar] = new Read[laserdisc.protocol.Bulk, laserdisc.Bar] {
-         |  override final def read(a: laserdisc.protocol.Bulk): Option[laserdisc.Bar] = ???
+         |implicit final val myRead: Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar] = new Read[laserdisc.protocol.resp.Bulk, laserdisc.Bar] {
+         |  override final def read(a: laserdisc.protocol.resp.Bulk): Option[laserdisc.Bar] = ???
          |}
          |
          |Note 1: you can use the factory method Read.instance instead of creating it manually as shown above
@@ -69,12 +70,12 @@ abstract class HashPSpec extends BaseSpec with HashP {
     assertNoDiff(
       compileErrors("""hgetall[Map[String, Int]](Key("a"))"""),
       """|error:
-         |Implicit not found Read[laserdisc.protocol.Arr, Map[String,Int]].
+         |Implicit not found Read[laserdisc.protocol.resp.Arr, Map[String,Int]].
          |
          |Try writing your own, for example:
          |
-         |implicit final val myRead: Read[laserdisc.protocol.Arr, Map[String,Int]] = new Read[laserdisc.protocol.Arr, Map[String,Int]] {
-         |  override final def read(a: laserdisc.protocol.Arr): Option[Map[String,Int]] = ???
+         |implicit final val myRead: Read[laserdisc.protocol.resp.Arr, Map[String,Int]] = new Read[laserdisc.protocol.resp.Arr, Map[String,Int]] {
+         |  override final def read(a: laserdisc.protocol.resp.Arr): Option[Map[String,Int]] = ???
          |}
          |
          |Note 1: you can use the factory method Read.instance instead of creating it manually as shown above

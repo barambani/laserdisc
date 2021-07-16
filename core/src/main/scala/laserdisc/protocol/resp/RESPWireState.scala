@@ -3,7 +3,7 @@ package protocol
 package resp
 
 import laserdisc.protocol.resp.RESP.reprOfInt
-import laserdisc.protocol.resp.RESPCodec._
+import laserdisc.protocol.resp.RESPEncoder._
 import laserdisc.protocol.resp.RESPWireState.{Complete, CompleteWithRemainder, Incomplete, MissingBytes}
 
 import scala.annotation.tailrec
@@ -22,7 +22,7 @@ object RESPWireState extends RESPWireStateFunctions {
   final case class CompleteWithRemainder(complete: Array[Byte], remainder: Array[Byte]) extends RESPWireState {
     override def equals(obj: Any): Boolean =
       obj match {
-        case CompleteWithRemainder(c, r) => RESPCodec.same(complete, c) && RESPCodec.same(remainder, r)
+        case CompleteWithRemainder(c, r) => RESPEncoder.same(complete, c) && RESPEncoder.same(remainder, r)
         case _                           => false
       }
   }

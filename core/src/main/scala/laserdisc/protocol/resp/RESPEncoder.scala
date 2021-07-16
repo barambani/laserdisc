@@ -2,24 +2,24 @@ package laserdisc
 package protocol
 package resp
 
-import laserdisc.protocol.resp.RESPCodec._
+import laserdisc.protocol.resp.RESPEncoder._
 
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.annotation.tailrec
 
-private[resp] trait RESPCodec[A] { self =>
+private[resp] trait RESPEncoder[A] { self =>
   def encode(a: A): Array[Byte]
   def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[A]
 
-  final def biMap[B](f: A => B, g: B => A): RESPCodec[B] =
-    new RESPCodec[B] {
+  final def biMap[B](f: A => B, g: B => A): RESPEncoder[B] =
+    new RESPEncoder[B] {
       override def encode(b: B): Array[Byte] = self.encode(g(b))
       override def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[B] =
         self.decode(raw).map(_.map(f))
     }
 
-  final def biMap_[B](f: RESPDecodingStep[A] => RESPCodecErr | RESPDecodingStep[B], g: B => A): RESPCodec[B] =
-    new RESPCodec[B] {
+  final def biMap_[B](f: RESPDecodingStep[A] => RESPCodecErr | RESPDecodingStep[B], g: B => A): RESPEncoder[B] =
+    new RESPEncoder[B] {
       override def encode(b: B): Array[Byte] = self.encode(g(b))
       override def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[B] =
         self.decode(raw).flatMap(d => f(d))
@@ -46,8 +46,8 @@ private[resp] trait RESPCodec[A] { self =>
     else Left(error.getOrElse(BBB("ERRORRRRRRR")))
   }
 
-  final def nestedIn(layer: RESPCodec[Array[Byte]]): RESPCodec[A] =
-    new RESPCodec[A] {
+  final def nestedIn(layer: RESPEncoder[Array[Byte]]): RESPEncoder[A] =
+    new RESPEncoder[A] {
       override def encode(a: A): Array[Byte] =
         layer.encode(self.encode(a))
 
@@ -57,11 +57,11 @@ private[resp] trait RESPCodec[A] { self =>
         }
     }
 
-  final def toCrlfTerminated(crlfAfter: Int = 0): RESPCodec[A] =
+  final def toCrlfTerminated(crlfAfter: Int = 0): RESPEncoder[A] =
     nestedIn(terminatedFrom(crlf, crlfAfter))
 }
 
-private[resp] object RESPCodec extends ByteArrayFunctions {
+private[resp] object RESPEncoder extends ByteArrayFunctions {
   final val plus              = "+".getBytes(UTF_8)
   final val minus             = "-".getBytes(UTF_8)
   final val colon             = ":".getBytes(UTF_8)
@@ -78,8 +78,8 @@ private[resp] object RESPCodec extends ByteArrayFunctions {
   final case class AAAAAAA(message: String) extends RESPCodecErr(message)
   final case class BBB(message: String)     extends RESPCodecErr(message)
 
-  final def terminatedFrom(termination: Array[Byte], from: Int): RESPCodec[Array[Byte]] =
-    new RESPCodec[Array[Byte]] {
+  final def terminatedFrom(termination: Array[Byte], from: Int): RESPEncoder[Array[Byte]] =
+    new RESPEncoder[Array[Byte]] {
       override final def encode(a: Array[Byte]): Array[Byte] = a ++ termination
       override final def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[Array[Byte]] = {
         val i = positionOfArray(raw)(termination, from)
@@ -89,14 +89,14 @@ private[resp] object RESPCodec extends ByteArrayFunctions {
       }
     }
 
-  final val lenientUtf8Codec = new RESPCodec[String] {
+  final val lenientUtf8Codec = new RESPEncoder[String] {
     override def encode(str: String): Array[Byte] = str.getBytes(UTF_8)
     override def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[String] =
       Right(RESPDecodingStep(new String(raw, UTF_8), Array.empty))
     override def toString: String = s"lenient-${UTF_8.displayName}"
   }
 
-  final val hexCodec = new RESPCodec[String] {
+  final val hexCodec = new RESPEncoder[String] {
     override def encode(str: String): Array[Byte] = str.getBytes(UTF_8)
     override def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[String] =
       Right(RESPDecodingStep(raw.map(_.toInt.toHexString).mkString(" "), Array.empty))
@@ -105,7 +105,7 @@ private[resp] object RESPCodec extends ByteArrayFunctions {
 }
 
 private[resp] sealed trait ByteArrayFunctions {
-  import RESPCodec.lenientUtf8Codec
+  import RESPEncoder.lenientUtf8Codec
 
   final def same(array: Array[Byte], other: Array[Byte]): Boolean =
     array.sameElements(other)

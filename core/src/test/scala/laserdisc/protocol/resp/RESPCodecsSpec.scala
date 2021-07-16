@@ -3,7 +3,7 @@ package protocol
 package resp
 
 import laserdisc.protocol.resp.RESP.respCodec
-import laserdisc.protocol.resp.RESPCodec.{RESPCodecErr, lenientUtf8Codec}
+import laserdisc.protocol.resp.RESPEncoder.{RESPCodecErr, lenientUtf8Codec}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen._
 import org.scalacheck.Prop.forAll

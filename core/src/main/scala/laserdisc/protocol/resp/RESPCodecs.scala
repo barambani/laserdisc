@@ -2,7 +2,7 @@ package laserdisc
 package protocol
 package resp
 
-import laserdisc.protocol.resp.RESPCodec._
+import laserdisc.protocol.resp.RESPEncoder._
 
 import java.{lang => j}
 
@@ -10,23 +10,23 @@ private[resp] final case class Repr[A](decoded: A, bytes: Array[Byte])
 
 private[resp] trait RESPCodecs extends {
 
-  private[this] final val crlfTerminatedString: RESPCodec[String] =
+  private[this] final val crlfTerminatedString: RESPEncoder[String] =
     lenientUtf8Codec.toCrlfTerminated()
-  private[this] final def crlfTerminatedStringAt(crlfAfter: Int): RESPCodec[String] =
+  private[this] final def crlfTerminatedStringAt(crlfAfter: Int): RESPEncoder[String] =
     lenientUtf8Codec.toCrlfTerminated(crlfAfter)
 
-  private[this] final val crlfTerminatedLong: RESPCodec[Long] = crlfTerminatedString.biMap_[Long](
+  private[this] final val crlfTerminatedLong: RESPEncoder[Long] = crlfTerminatedString.biMap_[Long](
     res =>
       try Right(RESPDecodingStep(j.Long.parseLong(res.step), res.remainder))
       catch { case _: NumberFormatException => Left(BBB(s"Expected long but found ${res.step}")) },
     _.toString
   )
 
-  private[this] final val strCodec: RESPCodec[Str] = crlfTerminatedString.biMap[Str](Str.apply, _.value)
-  private[this] final val errCodec: RESPCodec[Err] = crlfTerminatedString.biMap[Err](Err.apply, _.message)
-  private[this] final val numCodec: RESPCodec[Num] = crlfTerminatedLong.biMap[Num](Num.apply, _.value)
+  private[this] final val strCodec: RESPEncoder[Str] = crlfTerminatedString.biMap[Str](Str.apply, _.value)
+  private[this] final val errCodec: RESPEncoder[Err] = crlfTerminatedString.biMap[Err](Err.apply, _.message)
+  private[this] final val numCodec: RESPEncoder[Num] = crlfTerminatedLong.biMap[Num](Num.apply, _.value)
 
-  private[this] final val bulkCodec: RESPCodec[GenBulk] = new RESPCodec[GenBulk] {
+  private[this] final val bulkCodec: RESPEncoder[GenBulk] = new RESPEncoder[GenBulk] {
     private[this] final val nullBulkBytes          = minusOne ++ crlf
     private[this] final def failDec(negSize: Long) = BBB(s"failed to decode bulk-string of size $negSize")
 
@@ -52,7 +52,7 @@ private[resp] trait RESPCodecs extends {
       }
   }
 
-  private[this] final val arrCodec: RESPCodec[GenArr] = new RESPCodec[GenArr] {
+  private[this] final val arrCodec: RESPEncoder[GenArr] = new RESPEncoder[GenArr] {
     private[this] final val nilArrBits   = minusOne ++ crlf
     private[this] final val emptyArrBits = zero ++ crlf
     private[this] final def checkSize(
@@ -89,15 +89,15 @@ private[resp] trait RESPCodecs extends {
       }
   }
 
-  final val reprOfInt: RESPCodec[Repr[Int]] =
-    new RESPCodec[Repr[Int]] {
+  final val reprOfInt: RESPEncoder[Repr[Int]] =
+    new RESPEncoder[Repr[Int]] {
       override def encode(a: Repr[Int]): Array[Byte] = a.bytes
       override def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[Repr[Int]] =
         try lenientUtf8Codec.decode(raw).map(_.map(strInt => Repr(strInt.toInt, raw)))
         catch { case _: NumberFormatException => Left(BBB(s"Expected long but found ${toUtf8(raw)}")) }
     }
 
-  final val respCodec: RESPCodec[RESP] = new RESPCodec[RESP] {
+  final val respCodec: RESPEncoder[RESP] = new RESPEncoder[RESP] {
     override def decode(raw: Array[Byte]): RESPCodecErr | RESPDecodingStep[RESP] =
       consumeMap(raw)(
         respCommandIdSize,

@@ -2,7 +2,7 @@ package laserdisc
 package protocol
 package resp
 
-import laserdisc.protocol.resp.RESPCodec.toHex
+import laserdisc.protocol.resp.RESPEncoder.toHex
 import laserdisc.protocol.resp.RESPWireState.{Complete, CompleteWithRemainder, Incomplete, MissingBytes, stateOf}
 
 import scala.annotation.tailrec
@@ -35,7 +35,7 @@ private[protocol] sealed trait NonEmptyRESPFrame extends RESPFrame
 private[laserdisc] final case class CompleteFrame(bytes: Array[Byte]) extends NonEmptyRESPFrame {
   override def equals(obj: Any): Boolean =
     obj match {
-      case CompleteFrame(b) => RESPCodec.same(bytes, b)
+      case CompleteFrame(b) => RESPEncoder.same(bytes, b)
       case _                => false
     }
 }
@@ -43,7 +43,7 @@ private[laserdisc] final case class MoreThanOneFrame(private[laserdisc] val comp
     extends NonEmptyRESPFrame {
   override def equals(obj: Any): Boolean =
     obj match {
-      case MoreThanOneFrame(c, r) => (complete == c) && RESPCodec.same(remainder, r)
+      case MoreThanOneFrame(c, r) => (complete == c) && RESPEncoder.same(remainder, r)
       case _                      => false
     }
 }
@@ -55,7 +55,7 @@ private[laserdisc] final case class IncompleteFrame(partial: Array[Byte], bytesT
 
   override def equals(obj: Any): Boolean =
     obj match {
-      case IncompleteFrame(p, tc) => RESPCodec.same(partial, p) && (bytesToComplete == tc)
+      case IncompleteFrame(p, tc) => RESPEncoder.same(partial, p) && (bytesToComplete == tc)
       case _                      => false
     }
 }

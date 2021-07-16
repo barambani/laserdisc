@@ -341,7 +341,7 @@ lazy val fs2 = project
 
 lazy val `core-bench` = project
   .in(file("benchmarks/core"))
-  .dependsOn(core.jvm % "compile->test;compile->compile")
+  .dependsOn(core.jvm % "compile->teRESPBenchst;compile->compile")
   .enablePlugins(JmhPlugin)
   .settings(
     name := "laserdisc-core-benchmarks",

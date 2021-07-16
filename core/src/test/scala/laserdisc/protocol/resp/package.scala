@@ -9,5 +9,5 @@ package object resp {
   }
 
   final def printEscapedArray(bytes: Array[Byte]): String =
-    printEscaped(RESPCodec.toUtf8(bytes, take = 10000))
+    printEscaped(RESPEncoder.toUtf8(bytes, take = 10000))
 }

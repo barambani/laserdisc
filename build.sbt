@@ -144,7 +144,9 @@ val fs2BenchDeps = Def.Initialize.join {
     zio,
     `zio-interop-cats`,
     `log-effect-zio`,
-    logback
+    logback,
+    munit,
+    `munit-scalacheck`
   )
 }
 
@@ -405,8 +407,8 @@ lazy val laserdisc = project
   .settings(
     scalaVersion    := current_version,
     publishArtifact := false,
-    addCommandAlias("benchClean", "all core-bench/clean fs2-bench/clean"),
-    addCommandAlias("benchCompile", "all core-bench/compile fs2-bench/compile"),
+    addCommandAlias("benchClean", "core-bench/clean;fs2-bench/clean"),
+    addCommandAlias("benchCompile", "core-bench/Test/compile;fs2-bench/Test/compile"),
     addCommandAlias("benchBuild", "benchClean; benchCompile"),
     addCommandAlias("fmt", "all scalafmtAll scalafmtSbt core-bench/scalafmtAll fs2-bench/scalafmtAll"),
     addCommandAlias("fmtCheck", "all scalafmtCheckAll scalafmtSbtCheck core-bench/scalafmtCheckAll fs2-bench/scalafmtCheckAll"),

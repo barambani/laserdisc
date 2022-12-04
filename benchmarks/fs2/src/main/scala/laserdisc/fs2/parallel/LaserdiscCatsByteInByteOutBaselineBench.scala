@@ -8,6 +8,7 @@ import laserdisc.auto._
 import laserdisc.fs2.parallel.SetUpLaserdiscCatsBaseline.LaserdiscCatsBaselineSetUp
 import laserdisc.fs2.parallel.channels.ByteInByteOutChannel
 import laserdisc.fs2.parallel.runtime.BenchRuntime.createNewRuntime
+import laserdisc.fs2.parallel.runtime.asdsaasdasd
 import laserdisc.fs2.parallel.testcases.TestCasesLaserdiscByteBaseline
 import log.effect.fs2.SyncLogWriter
 import log.effect.{LogLevels, LogWriter}
@@ -19,8 +20,7 @@ class LaserdiscCatsByteInByteOutBaselineBench() {
   @Benchmark
   @OperationsPerInvocation(48)
   def parallelLoad1(setUp: LaserdiscCatsBaselineSetUp, bh: Blackhole): Unit = {
-    val run = setUp.testCases.case1
-    val res = run.unsafeRunSync()(setUp.runtime)
+    val res = setUp.run(setUp.testCases.case1)
 
     bh.consume(res)
   }
@@ -28,8 +28,7 @@ class LaserdiscCatsByteInByteOutBaselineBench() {
   @Benchmark
   @OperationsPerInvocation(48)
   def parallelLoad2(setUp: LaserdiscCatsBaselineSetUp, bh: Blackhole): Unit = {
-    val run = setUp.testCases.case2
-    val res = run.unsafeRunSync()(setUp.runtime)
+    val res = setUp.run(setUp.testCases.case2)
 
     bh.consume(res)
   }
@@ -38,7 +37,7 @@ class LaserdiscCatsByteInByteOutBaselineBench() {
 object SetUpLaserdiscCatsBaseline {
 
   @State(Scope.Benchmark)
-  class LaserdiscCatsBaselineSetUp {
+  class LaserdiscCatsBaselineSetUp extends asdsaasdasd[Vector[Byte]] {
     implicit val logWriter: LogWriter[IO] =
       SyncLogWriter.consoleLogUpToLevel(LogLevels.Error)
 
@@ -60,5 +59,11 @@ object SetUpLaserdiscCatsBaseline {
     @TearDown
     def tearDown(): Unit =
       runtime.shutdown()
+
+    def run(run: IO[Vector[Byte]]): Vector[Byte] =
+      run.unsafeRunSync()(runtime)
+
+    def longTestCase(): IO[Vector[Byte]]  = testCases.case1
+    def shortTestCase(): IO[Vector[Byte]] = testCases.case2
   }
 }

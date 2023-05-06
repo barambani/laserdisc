@@ -6,18 +6,18 @@ import cats.syntax.flatMap._
 import cats.syntax.traverse._
 import laserdisc.all._
 import laserdisc.auto._
-import laserdisc.fs2.LaserdiscFs2ClientSpec.ClientSpecIo
+import laserdisc.fs2.LaserdiscFs2ClientParallelSpec.ParClientSpecIo
 
 import scala.collection.parallel.immutable.ParSeq
 
-final class RedisClientSpec extends ClientSpecIo(6379, "redis")
-final class KeyDbClientSpec extends ClientSpecIo(6380, "keyDb")
+final class RedisClientParSpec extends ParClientSpecIo(6379, "redis")
+final class KeyDbClientParSpec extends ParClientSpecIo(6380, "keyDb")
 
-object LaserdiscFs2ClientSpec {
-  abstract class ClientSpecIo(p: Port, dest: String) extends LaserdiscFs2ClientSpec(p, dest)
+object LaserdiscFs2ClientParallelSpec {
+  abstract class ParClientSpecIo(p: Port, dest: String) extends LaserdiscFs2ClientParallelSpec(p, dest)
 }
 
-sealed abstract class LaserdiscFs2ClientSpec(p: Port, dest: String) extends LaserdiscFs2Suite(p) {
+sealed abstract class LaserdiscFs2ClientParallelSpec(p: Port, dest: String) extends LaserdiscFs2Suite(p) {
   private def preset(cl: RedisClient[IO], payload: String): IO[Unit] =
     cl.send(set(key, payload)) >>= (_ => async.unit)
 

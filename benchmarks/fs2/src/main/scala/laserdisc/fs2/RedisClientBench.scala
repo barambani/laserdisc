@@ -1,43 +1,43 @@
 package laserdisc.fs2
 
-import cats.effect.unsafe.IORuntime
 import cats.effect.{IO, Resource}
 import cats.syntax.traverse._
 import laserdisc._
 import laserdisc.all._
 import laserdisc.auto._
 import laserdisc.fs2.SetUpLaserdiscCatsRespByte.LaserdiscState
-import laserdisc.fs2.parallel.runtime.BenchRuntime.createNewRuntime
+import laserdisc.fs2.parallel.runtime.BenchRuntime
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig
 import org.openjdk.jmh.annotations._
 import redis.clients.jedis.{Jedis, JedisPool}
 
-object SetUpLaserdiscCatsRespByte {
+private object SetUpLaserdiscCatsRespByte {
 
   @State(Scope.Benchmark)
   class LaserdiscState {
-    var runtime: IORuntime = _
+    var runtime: BenchRuntime = _
 
     var client: RedisClient[IO]         = _
     private var clientCleanUp: IO[Unit] = _
 
     @Setup
     def setup(): Unit = {
-      runtime = createNewRuntime()
-      RedisClient[IO]
-        .to("localhost", 6379)
-        .allocated
-        .map { case (rc, cu) =>
-          client = rc
-          clientCleanUp = cu
-        }
-        .unsafeRunSync()(runtime)
+      runtime = BenchRuntime.fixedThreadRuntime
+      runtime.runUnsafeSync(
+        RedisClient[IO]
+          .to("localhost", 6379)
+          .allocated
+          .map { case (rc, cu) =>
+            client = rc
+            clientCleanUp = cu
+          }
+      )
     }
 
     @TearDown
     def tearDown(): Unit = {
-      clientCleanUp.unsafeRunSync()(runtime)
-      runtime.shutdown()
+      runtime.runUnsafeSync(clientCleanUp)
+      runtime.tearDown()
     }
   }
 }
@@ -46,7 +46,7 @@ object SetUpLaserdiscCatsRespByte {
 class JedisState {
   var jedisPool: JedisPool = _
 
-  var runtime: IORuntime = _
+  var runtime: BenchRuntime = _
 
   @Setup
   def setup(): Unit = {
@@ -55,13 +55,13 @@ class JedisState {
     poolConfig.setMinIdle(0)
     poolConfig.setMaxIdle(0)
     jedisPool = new JedisPool(poolConfig, "localhost", 6379)
-    runtime = createNewRuntime()
+    runtime = BenchRuntime.fixedThreadRuntime
   }
 
   @TearDown
   def tearDown(): Unit = {
     jedisPool.close()
-    runtime.shutdown()
+    runtime.tearDown()
   }
 }
 
@@ -80,29 +80,32 @@ class RedisClientBench {
   @Benchmark
   @OperationsPerInvocation(100)
   def jedisWriteAccum100(jedisState: JedisState): Int =
-    Resource
-      .fromAutoCloseable[IO, Jedis](IO(jedisState.jedisPool.getResource))
-      .use { jedisClient =>
-        writeAndReadForKey[String](
-          s"test-key:$numberOfItems",
-          numberOfItems,
-          (k, v) => IO(jedisClient.set(k, v.toString)),
-          k => IO(jedisClient.get(k))
-        )
-      }
-      .unsafeRunSync()(jedisState.runtime)
+    jedisState.runtime.runUnsafeSync(
+      Resource
+        .fromAutoCloseable[IO, Jedis](IO(jedisState.jedisPool.getResource))
+        .use { jedisClient =>
+          writeAndReadForKey[String](
+            s"test-key:$numberOfItems",
+            numberOfItems,
+            (k, v) => IO(jedisClient.set(k, v.toString)),
+            k => IO(jedisClient.get(k))
+          )
+        }
+    )
 
   @Benchmark
   @OperationsPerInvocation(100)
   def laserdiscWriteAccum100(laserdiscState: LaserdiscState): Int = {
     val client = laserdiscState.client
     val key    = Key.unsafeFrom(s"test-key:$numberOfItems")
-    writeAndReadForKey[Key](
-      key,
-      numberOfItems,
-      (k, v) => client.send(set(k, v)),
-      k => client.send(get(k))
-    ).unsafeRunSync()(laserdiscState.runtime)
+    laserdiscState.runtime.runUnsafeSync(
+      writeAndReadForKey[Key](
+        key,
+        numberOfItems,
+        (k, v) => client.send(set(k, v)),
+        k => client.send(get(k))
+      )
+    )
   }
 }
 

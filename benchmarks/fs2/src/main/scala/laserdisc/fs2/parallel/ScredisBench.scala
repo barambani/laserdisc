@@ -3,9 +3,8 @@ package fs2
 package parallel
 
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import laserdisc.fs2.parallel.SetUpScredis.ScredisSetUp
-import laserdisc.fs2.parallel.runtime.BenchRuntime.createNewRuntime
+import laserdisc.fs2.parallel.runtime.BenchRuntime
 import laserdisc.fs2.parallel.testcases.TestCasesScredis
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
@@ -47,27 +46,27 @@ class ScredisBench() {
     bh.consume(Await.result(setUp.testCases.case6, Duration.Inf))
 }
 
-object SetUpScredis {
+private object SetUpScredis {
 
   @State(Scope.Benchmark)
   class ScredisSetUp {
 
-    var runtime: IORuntime = _
+    private var runtime: BenchRuntime = _
 
     private[fs2] var client: Redis               = _
     private[fs2] var testCases: TestCasesScredis = _
 
     @Setup(Level.Trial)
     def setup(): Unit = {
-      runtime = createNewRuntime()
+      runtime = BenchRuntime()
       client = Redis(host = "localhost", port = 6379)
-      testCases = TestCasesScredis(client)(runtime.compute)
+      testCases = TestCasesScredis(client)(runtime.computeEc)
     }
 
     @TearDown(Level.Trial)
     def tearDown(): Unit = {
-      (IO.fromFuture(IO(client.quit())) >> IO.unit).unsafeRunSync()(runtime)
-      runtime.shutdown()
+      runtime.runUnsafeSync(IO.fromFuture(IO(client.quit())) >> IO.unit)
+      runtime.tearDown()
     }
   }
 }

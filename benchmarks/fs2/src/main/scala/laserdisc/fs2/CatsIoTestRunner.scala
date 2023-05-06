@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.syntax.either._
 import cats.syntax.flatMap._
 import laserdisc.auto._
-import laserdisc.fs2.parallel.runtime.BenchRuntime.fixedFixedRuntime
+import laserdisc.fs2.parallel.runtime.BenchRuntime.fixedThreadRuntime
 import laserdisc.fs2.parallel.testcases.TestCasesLaserdisc
 import log.effect.fs2.SyncLogWriter.consoleLogUpToLevel
 import log.effect.{LogLevels, LogWriter}
@@ -32,7 +32,7 @@ object CatsIoTestRunner {
       }
     }
 
-    println(s"Avg send/s: ${task.unsafeRunSync()(fixedFixedRuntime) * 24.0 / runFor.toMinutes / 60}")
+    println(s"Avg send/s: ${fixedThreadRuntime.runUnsafeSync(task) * 24.0 / runFor.toMinutes / 60}")
     sys.exit()
   }
 }

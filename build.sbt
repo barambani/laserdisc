@@ -19,7 +19,7 @@ val V = new {
   val logback                = "1.2.3"
   val munit                  = "0.7.29"
   val `parallel-collections` = "1.0.4"
-  val redis4Cats             = "1.0.0-RC3"
+  val redis4Cats             = "1.3.0"
   val refined                = "0.11.0"
   val scalacheck             = "1.17.0"
   val `scala-redis`          = "3.30"
@@ -374,7 +374,7 @@ lazy val `fs2-bench` = project
     publishArtifact := false,
     scalacOptions ++= versionDependantScalacOptions.value,
     libraryDependencies ++= fs2BenchDeps.value,
-    run / fork := true
+    run / fork := false
   )
 
 lazy val cli = project

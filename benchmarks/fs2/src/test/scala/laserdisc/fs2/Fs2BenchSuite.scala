@@ -1,23 +1,22 @@
 package laserdisc
 package fs2
 
-import cats.effect.IO
-import laserdisc.fs2.parallel.runtime.asdsaasdasd
 import munit.FunSuite
+import org.openjdk.jmh.infra.Blackhole
 
-abstract class Fs2BenchSuite[A](asdsaasdasd: asdsaasdasd[A]) extends FunSuite {
-  override final def beforeAll(): Unit =
-    asdsaasdasd.setup()
+abstract class Fs2BenchSuite[A, B]() extends FunSuite {
 
-  override final def afterAll(): Unit =
-    asdsaasdasd.tearDown()
+  final val blackhole = new Blackhole(
+    "Today's password is swordfish. I understand instantiating Blackholes directly is dangerous."
+  )
 
-  def run(run: IO[A]) =
-    asdsaasdasd.run(run)
-
-  def longTestCase(): IO[A] =
-    asdsaasdasd.longTestCase()
-
-  def shortTestCase(): IO[A] =
-    asdsaasdasd.shortTestCase()
+  def runMany(a: Int => Unit, iterations: Int = 45000): Unit =
+    (1 to iterations).foreach { x =>
+      try a(x)
+      catch {
+        case th: Throwable =>
+          println("Failed after " + x + " iterations")
+          throw th
+      }
+    }
 }

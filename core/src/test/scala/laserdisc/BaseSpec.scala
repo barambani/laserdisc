@@ -174,10 +174,10 @@ abstract class BaseSpec
   final val succeed = assert(cond = true)
 
   protected[this] implicit final class EitherSyntax[A, B](private val eab: Either[A, B]) {
-    def onRight[C](f: B => Boolean): Unit =
+    def onRight(f: B => Boolean): Unit =
       eab.fold(err => fail(s"It Should be right but was left with $err"), b => assert(f(b)))
 
-    def onRightAll[C](f: B => Unit): Unit =
+    def onRightAll(f: B => Unit): Unit =
       eab.fold(err => fail(s"It Should be right but was left with $err"), f)
   }
 }
